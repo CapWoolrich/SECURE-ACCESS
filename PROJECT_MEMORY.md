@@ -32,6 +32,7 @@ Reemplazar procesos informales, chats grupales y registros en papel por una plat
 8. El QR o codigo corto no debe exponer datos sensibles.
 9. La app debe funcionar como PWA para caseta.
 10. Los cambios importantes deben registrarse en este archivo.
+11. Mientras la repo sea publica, no subir secretos, llaves, datos reales, informacion sensible ni detalles operativos no autorizados.
 
 ## Modelo de accesos aprobado
 
@@ -135,9 +136,17 @@ Decision: se crea PROJECT_MEMORY.md.
 Motivo: evitar que decisiones importantes se pierdan en conversaciones.
 Impacto: cada cambio relevante aceptado debe registrarse en este archivo.
 
+### 2026-05-23 - Repo publica durante fase de trabajo
+
+Decision: la repo permanecera publica temporalmente para facilitar trabajo con Codex y Claude hasta que el proyecto sea autorizado formalmente.
+Motivo: acelerar colaboracion, prototipado e implementacion inicial.
+Impacto: no se deben subir secretos, llaves API, variables reales, datos personales, datos reales de pasajeros, operadores, seguridad, vuelos, procedimientos internos no autorizados ni informacion sensible. Usar datos mock y placeholders.
+Archivos afectados: PROJECT_MEMORY.md
+
 ## Pendientes criticos
 
-- Cambiar la repo a privada.
+- Mantener repo publica solo durante fase no autorizada y sin datos sensibles.
+- Cambiar la repo a privada cuando el proyecto sea autorizado o antes de subir informacion sensible.
 - Crear estructura src.
 - Implementar MVP visual.
 - Definir esquema inicial de Supabase.
