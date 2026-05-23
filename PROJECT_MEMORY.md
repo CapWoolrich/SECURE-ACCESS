@@ -110,6 +110,17 @@ Regla: para proveedores se autoriza persona, empresa, motivo, vehiculo y zona.
 - Vercel
 - PWA
 
+## Arquitectura de rutas (vigente)
+
+- /login -> pagina de acceso premium institucional.
+- /dashboard -> panel operativo principal (control center).
+- /nueva-solicitud -> selector elegante entre VIP y proveedor.
+- /solicitudes/vip -> formulario formal de acceso VIP por evento.
+- /solicitudes/proveedor -> formulario formal de proveedor identificado.
+- /aprobaciones -> panel de aprobaciones para seguridad.
+- /puerta -> pantalla de validacion para caseta / guardia (optimizada para tablet).
+- /bitacora -> bitacora / auditoria con timeline y filtros.
+
 ## Decision log
 
 ### 2026-05-23 - Inicio del proyecto
@@ -143,17 +154,60 @@ Motivo: acelerar colaboracion, prototipado e implementacion inicial.
 Impacto: no se deben subir secretos, llaves API, variables reales, datos personales, datos reales de pasajeros, operadores, seguridad, vuelos, procedimientos internos no autorizados ni informacion sensible. Usar datos mock y placeholders.
 Archivos afectados: PROJECT_MEMORY.md
 
+### 2026-05-23 - Arquitectura visual premium y rutas del solicitante
+
+Decision:
+- Se define /nueva-solicitud como selector de tipo de solicitud (VIP o proveedor), sin formularios propios.
+- Se define /solicitudes/vip como pagina formal para solicitar accesos de pasajeros/VIP.
+- Se define /solicitudes/proveedor como pagina formal para proveedores identificados.
+- Se aprueba rediseno premium institucional (paleta dark navy/slate/graphite con acentos cyan/green/amber/red, tipografia Inter + JetBrains Mono, layout tipo Operations Control Center).
+- Se mantiene uso de mock data mientras la repo sea publica; no se conecta Supabase real, no hay WhatsApp, no hay biometria.
+- Se confirma que accesos VIP no deben capturar nombres, placas, telefonos ni identificaciones.
+- Se introduce sistema de diseno en CSS variables y componentes UI reutilizables (Card, Button, Badge, Input, Select, Textarea, Switch, StatusBadge, RequestTypeChip, RiskDot, RequestTypeCard, AccessSummaryCard, VipRequestForm, ProviderRequestForm, GateValidationPanel, Navbar, AppLayout).
+- Se agrega PWA manifest basico (manifest.webmanifest + icon.svg) sin service worker complejo.
+- Se hace tolerante el supabaseClient: si faltan variables de entorno, no rompe la app y opera en modo mock.
+- El payload del QR queda restringido a { folio, code, type } - nunca a datos personales.
+
+Motivo: el MVP previo se veia wireframe / generico; los flujos solicitante/aprobador/caseta no estaban diferenciados ni alineados a la regla central del producto.
+
+Impacto:
+- UI institucional con sensacion de centro de control aeroportuario.
+- Separacion clara entre seleccionar tipo (/nueva-solicitud) y rellenar formulario (/solicitudes/vip o /solicitudes/proveedor).
+- Bitacora con timeline filtrable.
+- Aprobaciones con tabla premium, filtros por estado y tipo, y acciones aprobar / corregir / rechazar / revocar.
+- Caseta con codigo corto grande, lista de vigentes y acciones registrar entrada / salida / incidente.
+
+Archivos afectados:
+- index.html
+- src/app/App.tsx
+- src/styles/globals.css
+- src/types/access.ts
+- src/data/mockAccessRequests.ts
+- src/lib/accessCodes.ts
+- src/lib/supabaseClient.ts
+- src/lib/qr.ts
+- src/components/layout/AppLayout.tsx
+- src/components/layout/Navbar.tsx
+- src/components/ui/* (Card, Button, Badge, Input, Select, Textarea, Switch)
+- src/components/access/* (StatusBadge, RequestTypeChip, RiskDot, RequestTypeCard, AccessSummaryCard, VipRequestForm, ProviderRequestForm)
+- src/components/gate/GateValidationPanel.tsx
+- src/pages/* (LoginPage, DashboardPage, NewAccessRequestPage, VipRequestPage, ProviderRequestPage, SecurityApprovalPage, GateValidationPage, AuditLogPage)
+- public/manifest.webmanifest
+- public/icon.svg
+
 ## Pendientes criticos
 
-- Mantener repo publica solo durante fase no autorizada y sin datos sensibles.
 - Cambiar la repo a privada cuando el proyecto sea autorizado o antes de subir informacion sensible.
-- Crear estructura src.
-- Implementar MVP visual.
-- Definir esquema inicial de Supabase.
-- Definir RLS por roles.
-- Crear generador real de QR y codigo corto.
-- Crear auditoria real.
-- Definir modo contingencia para caseta.
+- Definir esquema inicial de Supabase y RLS por roles.
+- Conectar persistencia real para solicitudes, aprobaciones, validaciones y bitacora (actualmente todo es mock).
+- Implementar generador real de QR y codigo corto con verificacion de unicidad.
+- Implementar autenticacion real (sustituir login simulado).
+- Definir modo contingencia para caseta sin conexion.
+- Implementar control de roles efectivo en navegacion y acciones.
+- Implementar reporte basico de accesos (exportable).
+- Agregar service worker controlado cuando se cierre la lista de rutas finales (PWA offline-friendly).
+- Sustituir mock data por seed verificado por seguridad.
+- Anadir iconografia vectorial (lucide-react ya esta en deps - integrarlo en navbar, tarjetas, botones de caseta).
 
 ## Formato para futuras decisiones
 

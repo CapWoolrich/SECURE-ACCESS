@@ -1,11 +1,17 @@
+import { GateValidationPanel } from '../components/gate/GateValidationPanel';
+
 export const GateValidationPage = () => (
-  <section className="card card--narrow">
-    <h1>Validación en Puerta</h1>
-    <p className="muted">Ingrese código corto o escanee QR para validar acceso activo.</p>
-    <div className="form-grid">
-      <input type="text" placeholder="Código de acceso" />
-      <button type="button">Validar</button>
+  <div className="stack">
+    <div className="page-header">
+      <div>
+        <div className="page-header__eyebrow">Caseta</div>
+        <h1 className="page-header__title">Validacion de acceso en puerta</h1>
+        <p className="page-header__sub">
+          Pantalla optimizada para tablet. Ingresa el codigo corto o escanea el QR del solicitante para
+          autorizar entradas, salidas y reportar incidentes.
+        </p>
+      </div>
     </div>
-    <small className="muted">Modo demo: validación local con datos simulados.</small>
-  </section>
+    <GateValidationPanel />
+  </div>
 );
