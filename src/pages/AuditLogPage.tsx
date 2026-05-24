@@ -3,7 +3,7 @@ import { Card, CardHeader } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { StatusBadge } from '../components/access/StatusBadge';
 import { RequestTypeChip } from '../components/access/RequestTypeChip';
-import { MOCK_AUDIT_EVENTS } from '../data/mockAccessRequests';
+import { useEvents } from '../lib/accessStore';
 import type { AuditEventType } from '../types/access';
 
 type EventFilter = 'all' | AuditEventType;
@@ -43,7 +43,6 @@ const FILTERS: Array<{ value: EventFilter; label: string }> = [
   { value: 'request_approved', label: 'Aprobadas' },
   { value: 'request_rejected', label: 'Rechazadas' },
   { value: 'correction_requested', label: 'Correcciones' },
-  { value: 'code_generated', label: 'Codigos' },
   { value: 'access_validated', label: 'Validaciones' },
   { value: 'entry_logged', label: 'Entradas' },
   { value: 'exit_logged', label: 'Salidas' },
@@ -51,15 +50,15 @@ const FILTERS: Array<{ value: EventFilter; label: string }> = [
   { value: 'access_revoked', label: 'Revocaciones' },
 ];
 
-const formatDateTime = (iso: string) =>
-  iso.replace('T', ' · ').slice(0, 16);
+const formatDateTime = (iso: string) => iso.replace('T', ' · ').slice(0, 16);
 
 export const AuditLogPage = () => {
+  const allEvents = useEvents();
   const [filter, setFilter] = useState<EventFilter>('all');
   const [search, setSearch] = useState('');
 
   const events = useMemo(() => {
-    return MOCK_AUDIT_EVENTS
+    return allEvents
       .filter((e) => filter === 'all' || e.eventType === filter)
       .filter((e) => {
         if (!search.trim()) return true;
@@ -71,7 +70,7 @@ export const AuditLogPage = () => {
         );
       })
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-  }, [filter, search]);
+  }, [filter, search, allEvents]);
 
   return (
     <div className="stack">
@@ -91,25 +90,21 @@ export const AuditLogPage = () => {
         <div className="stack-sm">
           <div className="row">
             {FILTERS.map((f) => (
-              <button
-                key={f.value}
-                type="button"
+              <button key={f.value} type="button"
                 className={`filter-chip ${filter === f.value ? 'is-active' : ''}`}
-                onClick={() => setFilter(f.value)}
-              >
-                {f.label}
-              </button>
+                onClick={() => setFilter(f.value)}>{f.label}</button>
             ))}
           </div>
-          <Input
-            placeholder="Buscar por folio, usuario o comentario..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Input placeholder="Buscar por folio, usuario o comentario..." value={search}
+            onChange={(e) => setSearch(e.target.value)} />
         </div>
 
         <div style={{ marginTop: 20 }}>
-          {events.length === 0 ? (
+          {allEvents.length === 0 ? (
+            <div className="empty-state">
+              Sin eventos registrados. Crea una solicitud para que aparezca el primer evento.
+            </div>
+          ) : events.length === 0 ? (
             <div className="empty-state">Sin eventos para los filtros seleccionados.</div>
           ) : (
             <div className="timeline">

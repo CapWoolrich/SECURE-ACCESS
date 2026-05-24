@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Card, CardHeader } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { StatusBadge } from '../access/StatusBadge';
 import { RequestTypeChip } from '../access/RequestTypeChip';
-import { MOCK_REQUESTS } from '../../data/mockAccessRequests';
+import { useRequests, logGateEvent } from '../../lib/accessStore';
 import type { AccessRequest } from '../../types/access';
 
 type LookupResult =
@@ -12,22 +13,24 @@ type LookupResult =
   | { kind: 'found'; request: AccessRequest }
   | { kind: 'denied'; reason: string };
 
-const ACTIVE_OR_APPROVED = MOCK_REQUESTS.filter(
-  (r) => r.status === 'active' || r.status === 'approved',
-);
-
 interface UsageState {
   entries: number;
   exits: number;
   incident: boolean;
 }
 
+const GUARD = 'Caseta Demo';
+
 export const GateValidationPanel = () => {
+  const requests = useRequests();
   const [code, setCode] = useState('');
   const [result, setResult] = useState<LookupResult>({ kind: 'idle' });
   const [usage, setUsage] = useState<Record<string, UsageState>>({});
 
-  const activeList = useMemo(() => ACTIVE_OR_APPROVED, []);
+  const activeList = useMemo(
+    () => requests.filter((r) => r.status === 'active' || r.status === 'approved'),
+    [requests],
+  );
 
   const handleValidate = () => {
     const clean = code.trim().toUpperCase();
@@ -35,7 +38,7 @@ export const GateValidationPanel = () => {
       setResult({ kind: 'denied', reason: 'Ingresa un codigo corto o escanea un QR.' });
       return;
     }
-    const match = MOCK_REQUESTS.find((r) => r.shortCode.toUpperCase() === clean);
+    const match = requests.find((r) => r.shortCode.toUpperCase() === clean);
     if (!match) {
       setResult({ kind: 'denied', reason: 'Codigo no encontrado en accesos vigentes.' });
       return;
@@ -44,15 +47,30 @@ export const GateValidationPanel = () => {
       setResult({ kind: 'denied', reason: `Acceso no valido: estado ${match.status}.` });
       return;
     }
-    setResult({ kind: 'found', request: match });
+    if (match.status === 'approved') {
+      logGateEvent(match.folio, 'access_validated', GUARD, { nextStatus: 'active' });
+    } else {
+      logGateEvent(match.folio, 'access_validated', GUARD);
+    }
+    setResult({ kind: 'found', request: { ...match, status: 'active' } });
   };
 
-  const trackUsage = (id: string, key: keyof UsageState) => {
+  const trackUsage = (req: AccessRequest, key: keyof UsageState) => {
     setUsage((prev) => {
-      const current: UsageState = prev[id] ?? { entries: 0, exits: 0, incident: false };
-      if (key === 'incident') return { ...prev, [id]: { ...current, incident: true } };
-      return { ...prev, [id]: { ...current, [key]: current[key] + 1 } };
+      const current: UsageState = prev[req.id] ?? { entries: 0, exits: 0, incident: false };
+      if (key === 'incident') return { ...prev, [req.id]: { ...current, incident: true } };
+      return { ...prev, [req.id]: { ...current, [key]: current[key] + 1 } };
     });
+    if (key === 'entries') {
+      logGateEvent(req.folio, 'entry_logged', GUARD);
+    } else if (key === 'exits') {
+      logGateEvent(req.folio, 'exit_logged', GUARD);
+    } else {
+      logGateEvent(req.folio, 'incident_flagged', GUARD, {
+        nextStatus: 'incident',
+        comment: 'Incidente marcado desde caseta',
+      });
+    }
   };
 
   const renderResult = () => {
@@ -62,6 +80,13 @@ export const GateValidationPanel = () => {
           <CardHeader eyebrow="Validacion" title="Sin lectura activa" subtitle="Ingresa el codigo o escanea el QR del solicitante." />
           <div className="empty-state">
             Ningun acceso validado todavia.
+            {requests.length === 0 && (
+              <div style={{ marginTop: 12 }}>
+                No hay solicitudes cargadas.{' '}
+                <Link to="/portal/login">Genera una en el portal del solicitante</Link> y aprobala
+                en <Link to="/aprobaciones">/aprobaciones</Link> antes de validarla aqui.
+              </div>
+            )}
           </div>
         </Card>
       );
@@ -93,31 +118,23 @@ export const GateValidationPanel = () => {
           {u.incident && <Badge tone="danger">Incidente marcado</Badge>}
         </div>
         <dl className="dl">
-          <dt>Folio</dt>
-          <dd className="text-mono">{r.folio}</dd>
-          <dt>Destino</dt>
-          <dd>{r.destination}</dd>
-          <dt>Ventana</dt>
-          <dd className="text-mono">{r.date} · {r.windowStart} - {r.windowEnd}</dd>
+          <dt>Folio</dt><dd className="text-mono">{r.folio}</dd>
+          <dt>Destino</dt><dd>{r.destination}</dd>
+          <dt>Ventana</dt><dd className="text-mono">{r.date} · {r.windowStart} - {r.windowEnd}</dd>
           {r.type === 'vip_event' && <>
-            <dt>Cupo autorizado</dt>
-            <dd>{r.maxPeople} personas / {r.maxVehicles} vehiculos</dd>
-            <dt>Cupo usado</dt>
-            <dd>{u.entries} entradas / {u.exits} salidas</dd>
+            <dt>Cupo autorizado</dt><dd>{r.maxPeople} personas / {r.maxVehicles} vehiculos</dd>
+            <dt>Cupo usado</dt><dd>{u.entries} entradas / {u.exits} salidas</dd>
           </>}
           {r.type === 'identified_provider' && <>
-            <dt>Empresa</dt>
-            <dd>{r.company}</dd>
-            <dt>Motivo</dt>
-            <dd>{r.reason}</dd>
+            <dt>Empresa</dt><dd>{r.company}</dd>
+            <dt>Motivo</dt><dd>{r.reason}</dd>
           </>}
-          <dt>Responsable</dt>
-          <dd>{r.internalResponsible}</dd>
+          <dt>Responsable</dt><dd>{r.internalResponsible}</dd>
         </dl>
         <div className="row" style={{ gap: 10 }}>
-          <Button size="xl" variant="success" onClick={() => trackUsage(r.id, 'entries')}>Registrar entrada</Button>
-          <Button size="xl" variant="secondary" onClick={() => trackUsage(r.id, 'exits')}>Registrar salida</Button>
-          <Button size="xl" variant="danger" onClick={() => trackUsage(r.id, 'incident')}>Reportar incidente</Button>
+          <Button size="xl" variant="success" onClick={() => trackUsage(r, 'entries')}>Registrar entrada</Button>
+          <Button size="xl" variant="secondary" onClick={() => trackUsage(r, 'exits')}>Registrar salida</Button>
+          <Button size="xl" variant="danger" onClick={() => trackUsage(r, 'incident')}>Reportar incidente</Button>
         </div>
       </div>
     );
@@ -151,7 +168,7 @@ export const GateValidationPanel = () => {
       </div>
 
       <Card>
-        <CardHeader eyebrow="Accesos vigentes" title="Lista operativa de caseta" subtitle="Aprobados y activos para hoy" />
+        <CardHeader eyebrow="Accesos vigentes" title="Lista operativa de caseta" subtitle="Aprobados y activos" />
         {activeList.length === 0 ? (
           <div className="empty-state">Sin accesos vigentes.</div>
         ) : (
