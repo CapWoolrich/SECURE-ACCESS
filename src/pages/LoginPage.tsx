@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 
@@ -12,7 +12,6 @@ export const LoginPage = () => {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Autenticacion simulada - no se conecta a Supabase ni servicios reales.
     window.setTimeout(() => {
       setLoading(false);
       navigate('/dashboard');
@@ -30,8 +29,8 @@ export const LoginPage = () => {
           <div>
             <h1 className="login-h1">Control privado de accesos aeroportuarios</h1>
             <p className="login-sub">
-              Plataforma para operadores, seguridad y validacion en caseta.
-              Trazabilidad completa, privacidad por diseno y operacion en tiempo real.
+              Plataforma para operadores, seguridad y validacion en caseta. Trazabilidad completa,
+              privacidad por diseno y operacion en tiempo real.
             </p>
             <ul className="login-meta-list">
               <li>Accesos VIP por evento - sin exponer identidades.</li>
@@ -45,8 +44,8 @@ export const LoginPage = () => {
 
         <section className="login-card__form">
           <div>
-            <h2 className="login-form__title">Acceso a la plataforma</h2>
-            <p className="login-form__sub">Ingresa con tus credenciales operativas.</p>
+            <h2 className="login-form__title">Acceso interno</h2>
+            <p className="login-form__sub">Seguridad, caseta y auditoria.</p>
           </div>
 
           <form className="login-form stack" style={{ marginTop: 24 }} onSubmit={handleSubmit}>
@@ -72,6 +71,11 @@ export const LoginPage = () => {
             </Button>
             <div className="login-form__warn">
               Ambiente MVP / Demo. Autenticacion simulada. No se conecta con servicios reales.
+            </div>
+            <div style={{ textAlign: 'center', marginTop: 8, fontSize: '0.82rem' }}>
+              <Link to="/portal/login" style={{ color: '#94a3b8' }}>
+                Soy operador solicitante &rarr; ir al Portal del solicitante
+              </Link>
             </div>
           </form>
         </section>

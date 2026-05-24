@@ -928,3 +928,74 @@ button { font-family: inherit; }
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-lg);
 }
+
+/* ============================================================================
+   Portal del solicitante (sitio satelite)
+   ============================================================================ */
+
+.navbar--portal {
+  background: linear-gradient(180deg, #0b1220 0%, #082f49 100%);
+  border-bottom: 1px solid rgba(8, 145, 178, 0.25);
+}
+.navbar--portal .navbar__title-sub { color: #67e8f9; letter-spacing: 0.08em; }
+
+.qr-frame {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.qr-frame__caption {
+  font-size: 0.72rem;
+  color: var(--color-text-subtle);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-align: center;
+}
+.qr-placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--color-surface-2);
+  color: var(--color-text-subtle);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-xs);
+}
+
+.recipient-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+.recipient-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+}
+.recipient-list__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  box-shadow: 0 0 0 3px var(--color-cyan-soft);
+}
+.recipient-list li > .text-mono { flex: 1; }
+
+.dot-bullet {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  margin-top: 8px;
+  flex-shrink: 0;
+}

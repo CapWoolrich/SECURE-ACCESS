@@ -195,8 +195,54 @@ Archivos afectados:
 - public/manifest.webmanifest
 - public/icon.svg
 
+
+### 2026-05-23 - Portal del solicitante (sitio satelite) y correos destinatarios
+
+Decision:
+- Se crea un portal satelite para operadores solicitantes bajo el namespace de rutas /portal/*, con su propio layout, navbar y guard de sesion.
+- Rutas del portal: /portal/login, /portal, /portal/nueva-solicitud, /portal/solicitudes/vip, /portal/solicitudes/proveedor, /portal/solicitud/:folio (confirmacion con QR), /portal/configuracion (correos destinatarios).
+- Sesion de operador simulada con sessionStorage; protege todas las rutas /portal/* excepto /portal/login.
+- Solicitudes emitidas desde el portal se guardan en sessionStorage para mostrar QR y estado en la pantalla de confirmacion y en el dashboard del operador.
+- Cada operador puede dar de alta hasta 4 correos destinatarios (almacenados en localStorage) que recibiran codigo corto, folio y QR cuando se genere una autorizacion.
+- El envio de correo queda como notificacion simulada en el MVP; cuando se integre el servicio de correo, los destinatarios recibiran payload sin datos personales.
+- LoginPage interno expone un link explicito al /portal/login para diferenciar el flujo de operadores del flujo de seguridad / caseta.
+- Los formularios VipRequestForm y ProviderRequestForm aceptan un onSubmitted callback opcional para que el portal pueda capturar la solicitud emitida y navegar a la pantalla de confirmacion con QR.
+- El payload del QR sigue restringido a { folio, code, type } - sin datos personales.
+
+Motivo: separar la experiencia del operador solicitante del sistema interno de seguridad / caseta / bitacora, y proveer un canal de entrega de QR (portal + correo) sin exponer datos sensibles.
+
+Impacto:
+- Operadores solo ven sus solicitudes y sus correos destinatarios.
+- Seguridad, caseta y auditoria conservan su entorno interno separado.
+- Notificacion por correo queda preparada en UI: la integracion real de correo es un pendiente.
+- Listo para sumar persistencia real (Supabase) sin cambiar la UX del portal.
+
+Archivos afectados:
+- src/app/App.tsx
+- src/pages/LoginPage.tsx
+- src/components/access/VipRequestForm.tsx
+- src/components/access/ProviderRequestForm.tsx
+- src/components/portal/OperatorPortalLayout.tsx
+- src/components/portal/OperatorPortalNavbar.tsx
+- src/components/portal/EmailRecipientsField.tsx
+- src/components/portal/QrPreview.tsx
+- src/hooks/useNotificationEmails.ts
+- src/hooks/useOperatorSession.ts
+- src/hooks/useOperatorRequests.ts
+- src/pages/portal/PortalLoginPage.tsx
+- src/pages/portal/PortalDashboardPage.tsx
+- src/pages/portal/PortalNewRequestPage.tsx
+- src/pages/portal/PortalVipRequestPage.tsx
+- src/pages/portal/PortalProviderRequestPage.tsx
+- src/pages/portal/PortalRequestSuccessPage.tsx
+- src/pages/portal/PortalEmailsConfigPage.tsx
+- src/styles/globals.css
+
 ## Pendientes criticos
 
+- Integrar servicio real de envio de correo (transactional) para entregar codigo + QR a los destinatarios del operador.
+- Definir esquema en Supabase para correos destinatarios por operador (con RLS) y migrar desde localStorage cuando la repo pase a privada.
+- Definir autenticacion real del portal (login, recuperacion, cierre de sesion por inactividad).
 - Cambiar la repo a privada cuando el proyecto sea autorizado o antes de subir informacion sensible.
 - Definir esquema inicial de Supabase y RLS por roles.
 - Conectar persistencia real para solicitudes, aprobaciones, validaciones y bitacora (actualmente todo es mock).

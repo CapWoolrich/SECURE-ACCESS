@@ -9,26 +9,46 @@ import { GateValidationPage } from '../pages/GateValidationPage';
 import { AuditLogPage } from '../pages/AuditLogPage';
 import { AppLayout } from '../components/layout/AppLayout';
 
-const Shell = ({ children }: { children: React.ReactNode }) => {
+import { OperatorPortalLayout } from '../components/portal/OperatorPortalLayout';
+import { PortalLoginPage } from '../pages/portal/PortalLoginPage';
+import { PortalDashboardPage } from '../pages/portal/PortalDashboardPage';
+import { PortalNewRequestPage } from '../pages/portal/PortalNewRequestPage';
+import { PortalVipRequestPage } from '../pages/portal/PortalVipRequestPage';
+import { PortalProviderRequestPage } from '../pages/portal/PortalProviderRequestPage';
+import { PortalRequestSuccessPage } from '../pages/portal/PortalRequestSuccessPage';
+import { PortalEmailsConfigPage } from '../pages/portal/PortalEmailsConfigPage';
+
+const InternalShell = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
-  // En /login la barra superior no se muestra: el layout es full bleed.
   if (location.pathname === '/login') return <>{children}</>;
   return <AppLayout>{children}</AppLayout>;
 };
 
+const Portal = ({ children }: { children: React.ReactNode }) => (
+  <OperatorPortalLayout>{children}</OperatorPortalLayout>
+);
+
 export const App = () => (
-  <Shell>
-    <Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/dashboard" element={<DashboardPage />} />
-      <Route path="/nueva-solicitud" element={<NewAccessRequestPage />} />
-      <Route path="/solicitudes/vip" element={<VipRequestPage />} />
-      <Route path="/solicitudes/proveedor" element={<ProviderRequestPage />} />
-      <Route path="/aprobaciones" element={<SecurityApprovalPage />} />
-      <Route path="/puerta" element={<GateValidationPage />} />
-      <Route path="/bitacora" element={<AuditLogPage />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
-  </Shell>
+  <Routes>
+    {/* Portal del solicitante (sitio satelite) */}
+    <Route path="/portal/login" element={<PortalLoginPage />} />
+    <Route path="/portal" element={<Portal><PortalDashboardPage /></Portal>} />
+    <Route path="/portal/nueva-solicitud" element={<Portal><PortalNewRequestPage /></Portal>} />
+    <Route path="/portal/solicitudes/vip" element={<Portal><PortalVipRequestPage /></Portal>} />
+    <Route path="/portal/solicitudes/proveedor" element={<Portal><PortalProviderRequestPage /></Portal>} />
+    <Route path="/portal/solicitud/:folio" element={<Portal><PortalRequestSuccessPage /></Portal>} />
+    <Route path="/portal/configuracion" element={<Portal><PortalEmailsConfigPage /></Portal>} />
+
+    {/* Sistema interno (seguridad / caseta) */}
+    <Route path="/" element={<Navigate to="/dashboard" replace />} />
+    <Route path="/login" element={<InternalShell><LoginPage /></InternalShell>} />
+    <Route path="/dashboard" element={<InternalShell><DashboardPage /></InternalShell>} />
+    <Route path="/nueva-solicitud" element={<InternalShell><NewAccessRequestPage /></InternalShell>} />
+    <Route path="/solicitudes/vip" element={<InternalShell><VipRequestPage /></InternalShell>} />
+    <Route path="/solicitudes/proveedor" element={<InternalShell><ProviderRequestPage /></InternalShell>} />
+    <Route path="/aprobaciones" element={<InternalShell><SecurityApprovalPage /></InternalShell>} />
+    <Route path="/puerta" element={<InternalShell><GateValidationPage /></InternalShell>} />
+    <Route path="/bitacora" element={<InternalShell><AuditLogPage /></InternalShell>} />
+    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+  </Routes>
 );

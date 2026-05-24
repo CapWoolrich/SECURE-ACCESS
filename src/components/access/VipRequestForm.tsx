@@ -12,7 +12,7 @@ import {
   generateFolio,
   generateShortCode,
 } from '../../lib/accessCodes';
-import type { AccessStatus } from '../../types/access';
+import type { AccessStatus, VipEventAccessRequest } from '../../types/access';
 
 interface VipFormState {
   requestingCompany: string;
@@ -50,8 +50,18 @@ const initialState: VipFormState = {
   comments: '',
 };
 
-export const VipRequestForm = () => {
-  const [form, setForm] = useState<VipFormState>(initialState);
+interface VipRequestFormProps {
+  onSubmitted?: (request: VipEventAccessRequest) => void;
+  submitLabel?: string;
+  createdBy?: string;
+  defaultCompany?: string;
+}
+
+export const VipRequestForm = ({ onSubmitted, submitLabel = 'Enviar solicitud', createdBy = 'Operador Demo', defaultCompany }: VipRequestFormProps) => {
+  const [form, setForm] = useState<VipFormState>({
+    ...initialState,
+    requestingCompany: defaultCompany ?? initialState.requestingCompany,
+  });
   const [status, setStatus] = useState<AccessStatus>('draft');
   const [folio, setFolio] = useState<string>('');
   const [shortCode, setShortCode] = useState<string>('');
@@ -64,6 +74,28 @@ export const VipRequestForm = () => {
     return buildQrPayload(folio, shortCode, 'vip_event');
   }, [folio, shortCode]);
 
+  const buildRequest = (f: string, c: string): VipEventAccessRequest => ({
+    id: `req-vip-${f}`,
+    folio: f,
+    shortCode: c,
+    type: 'vip_event',
+    status: 'submitted',
+    createdAt: new Date().toISOString(),
+    createdBy,
+    requestingCompany: form.requestingCompany,
+    aircraftReference: form.aircraftReference,
+    destination: form.destination,
+    date: form.date,
+    windowStart: form.windowStart,
+    windowEnd: form.windowEnd,
+    maxPeople: Number(form.maxPeople) || 0,
+    maxVehicles: Number(form.maxVehicles) || 0,
+    internalResponsible: form.internalResponsible,
+    escortRequired: form.escortRequired,
+    comments: form.comments || undefined,
+    riskLevel: 'low',
+  });
+
   const handleSaveDraft = () => {
     if (!folio) setFolio(generateFolio());
     setStatus('draft');
@@ -75,6 +107,7 @@ export const VipRequestForm = () => {
     setFolio(newFolio);
     setShortCode(newCode);
     setStatus('submitted');
+    if (onSubmitted) onSubmitted(buildRequest(newFolio, newCode));
   };
 
   return (
@@ -128,36 +161,10 @@ export const VipRequestForm = () => {
         <Card>
           <CardHeader eyebrow="Control de acceso" title="Ventana, cupo y escolta" />
           <div className="grid-2">
-            <Input
-              label="Hora de inicio"
-              type="time"
-              name="windowStart"
-              value={form.windowStart}
-              onChange={(e) => update('windowStart', e.target.value)}
-            />
-            <Input
-              label="Hora de fin"
-              type="time"
-              name="windowEnd"
-              value={form.windowEnd}
-              onChange={(e) => update('windowEnd', e.target.value)}
-            />
-            <Input
-              label="Maximo de personas"
-              type="number"
-              min={1}
-              name="maxPeople"
-              value={form.maxPeople}
-              onChange={(e) => update('maxPeople', e.target.value)}
-            />
-            <Input
-              label="Maximo de vehiculos"
-              type="number"
-              min={0}
-              name="maxVehicles"
-              value={form.maxVehicles}
-              onChange={(e) => update('maxVehicles', e.target.value)}
-            />
+            <Input label="Hora de inicio" type="time" name="windowStart" value={form.windowStart} onChange={(e) => update('windowStart', e.target.value)} />
+            <Input label="Hora de fin" type="time" name="windowEnd" value={form.windowEnd} onChange={(e) => update('windowEnd', e.target.value)} />
+            <Input label="Maximo de personas" type="number" min={1} name="maxPeople" value={form.maxPeople} onChange={(e) => update('maxPeople', e.target.value)} />
+            <Input label="Maximo de vehiculos" type="number" min={0} name="maxVehicles" value={form.maxVehicles} onChange={(e) => update('maxVehicles', e.target.value)} />
           </div>
           <div style={{ marginTop: 16 }}>
             <Switch
@@ -191,7 +198,7 @@ export const VipRequestForm = () => {
 
         <div className="row-end">
           <Button variant="ghost" onClick={handleSaveDraft}>Guardar borrador</Button>
-          <Button variant="primary" onClick={handleSubmit}>Enviar solicitud</Button>
+          <Button variant="primary" onClick={handleSubmit}>{submitLabel}</Button>
         </div>
       </div>
 
@@ -210,24 +217,15 @@ export const VipRequestForm = () => {
             <dd className="text-mono">{folio || 'Se genera al enviar'}</dd>
             <dt>Codigo corto</dt>
             <dd>{shortCode ? <span className="code-pill">{shortCode}</span> : <span className="text-subtle">--</span>}</dd>
-            <dt>Empresa</dt>
-            <dd>{form.requestingCompany || '--'}</dd>
-            <dt>Aeronave</dt>
-            <dd>{form.aircraftReference || '--'}</dd>
-            <dt>Destino</dt>
-            <dd>{form.destination || '--'}</dd>
-            <dt>Fecha</dt>
-            <dd className="text-mono">{form.date || '--'}</dd>
-            <dt>Ventana</dt>
-            <dd className="text-mono">{form.windowStart || '--'} - {form.windowEnd || '--'}</dd>
-            <dt>Cupo personas</dt>
-            <dd>{form.maxPeople || '--'}</dd>
-            <dt>Cupo vehiculos</dt>
-            <dd>{form.maxVehicles || '--'}</dd>
-            <dt>Escolta</dt>
-            <dd>{form.escortRequired ? 'Requerida' : 'No requerida'}</dd>
-            <dt>Responsable</dt>
-            <dd>{form.internalResponsible || '--'}</dd>
+            <dt>Empresa</dt><dd>{form.requestingCompany || '--'}</dd>
+            <dt>Aeronave</dt><dd>{form.aircraftReference || '--'}</dd>
+            <dt>Destino</dt><dd>{form.destination || '--'}</dd>
+            <dt>Fecha</dt><dd className="text-mono">{form.date || '--'}</dd>
+            <dt>Ventana</dt><dd className="text-mono">{form.windowStart || '--'} - {form.windowEnd || '--'}</dd>
+            <dt>Cupo personas</dt><dd>{form.maxPeople || '--'}</dd>
+            <dt>Cupo vehiculos</dt><dd>{form.maxVehicles || '--'}</dd>
+            <dt>Escolta</dt><dd>{form.escortRequired ? 'Requerida' : 'No requerida'}</dd>
+            <dt>Responsable</dt><dd>{form.internalResponsible || '--'}</dd>
           </dl>
           {qrPayload && (
             <>

@@ -9,7 +9,7 @@ import { Badge } from '../ui/Badge';
 import { RiskDot } from './RiskDot';
 import { StatusBadge } from './StatusBadge';
 import { generateFolio, generateShortCode } from '../../lib/accessCodes';
-import type { AccessStatus, RiskLevel } from '../../types/access';
+import type { AccessStatus, ProviderAccessRequest, RiskLevel } from '../../types/access';
 
 interface ProviderFormState {
   fullName: string;
@@ -60,7 +60,13 @@ const initialState: ProviderFormState = {
   comments: '',
 };
 
-export const ProviderRequestForm = () => {
+interface ProviderRequestFormProps {
+  onSubmitted?: (request: ProviderAccessRequest) => void;
+  submitLabel?: string;
+  createdBy?: string;
+}
+
+export const ProviderRequestForm = ({ onSubmitted, submitLabel = 'Enviar solicitud', createdBy = 'Operador Demo' }: ProviderRequestFormProps) => {
   const [form, setForm] = useState<ProviderFormState>(initialState);
   const [status, setStatus] = useState<AccessStatus>('draft');
   const [folio, setFolio] = useState<string>('');
@@ -69,15 +75,42 @@ export const ProviderRequestForm = () => {
   const update = <K extends keyof ProviderFormState>(key: K, value: ProviderFormState[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  const buildRequest = (f: string, c: string): ProviderAccessRequest => ({
+    id: `req-prv-${f}`,
+    folio: f,
+    shortCode: c,
+    type: 'identified_provider',
+    status: 'submitted',
+    createdAt: new Date().toISOString(),
+    createdBy,
+    fullName: form.fullName,
+    company: form.company,
+    reason: form.reason,
+    destination: form.destination,
+    date: form.date,
+    windowStart: form.windowStart,
+    windowEnd: form.windowEnd,
+    vehicleDescription: form.vehicleDescription,
+    licensePlate: form.licensePlate,
+    toolsOrEquipment: form.toolsOrEquipment,
+    internalResponsible: form.internalResponsible,
+    escortRequired: form.escortRequired,
+    riskLevel: form.riskLevel,
+    comments: form.comments || undefined,
+  });
+
   const handleSaveDraft = () => {
     if (!folio) setFolio(generateFolio());
     setStatus('draft');
   };
 
   const handleSubmit = () => {
-    setFolio(folio || generateFolio());
-    setShortCode(shortCode || generateShortCode('identified_provider'));
+    const newFolio = folio || generateFolio();
+    const newCode = shortCode || generateShortCode('identified_provider');
+    setFolio(newFolio);
+    setShortCode(newCode);
     setStatus('submitted');
+    if (onSubmitted) onSubmitted(buildRequest(newFolio, newCode));
   };
 
   return (
@@ -86,103 +119,30 @@ export const ProviderRequestForm = () => {
         <Card>
           <CardHeader eyebrow="Identificacion" title="Persona y empresa" />
           <div className="grid-2">
-            <Input
-              label="Nombre completo"
-              name="fullName"
-              value={form.fullName}
-              onChange={(e) => update('fullName', e.target.value)}
-              placeholder="Nombre del proveedor (ficticio)"
-            />
-            <Input
-              label="Empresa"
-              name="company"
-              value={form.company}
-              onChange={(e) => update('company', e.target.value)}
-              placeholder="MantTec Demo"
-            />
-            <Input
-              label="Motivo de acceso"
-              name="reason"
-              value={form.reason}
-              onChange={(e) => update('reason', e.target.value)}
-              placeholder="Mantenimiento, catering, recarga, etc."
-            />
-            <Input
-              label="Responsable interno"
-              name="internalResponsible"
-              value={form.internalResponsible}
-              onChange={(e) => update('internalResponsible', e.target.value)}
-              placeholder="Jefe de mantenimiento, despacho, etc."
-            />
+            <Input label="Nombre completo" name="fullName" value={form.fullName} onChange={(e) => update('fullName', e.target.value)} placeholder="Nombre del proveedor (ficticio)" />
+            <Input label="Empresa" name="company" value={form.company} onChange={(e) => update('company', e.target.value)} placeholder="MantTec Demo" />
+            <Input label="Motivo de acceso" name="reason" value={form.reason} onChange={(e) => update('reason', e.target.value)} placeholder="Mantenimiento, catering, recarga, etc." />
+            <Input label="Responsable interno" name="internalResponsible" value={form.internalResponsible} onChange={(e) => update('internalResponsible', e.target.value)} placeholder="Jefe de mantenimiento, despacho, etc." />
           </div>
         </Card>
 
         <Card>
           <CardHeader eyebrow="Destino y ventana" title="Area, fecha y horario" />
           <div className="grid-2">
-            <Select
-              label="Area destino"
-              name="destination"
-              value={form.destination}
-              onChange={(e) => update('destination', e.target.value)}
-              options={DESTINOS}
-            />
-            <Input
-              label="Fecha"
-              type="date"
-              name="date"
-              value={form.date}
-              onChange={(e) => update('date', e.target.value)}
-            />
-            <Input
-              label="Hora de inicio"
-              type="time"
-              name="windowStart"
-              value={form.windowStart}
-              onChange={(e) => update('windowStart', e.target.value)}
-            />
-            <Input
-              label="Hora de fin"
-              type="time"
-              name="windowEnd"
-              value={form.windowEnd}
-              onChange={(e) => update('windowEnd', e.target.value)}
-            />
+            <Select label="Area destino" name="destination" value={form.destination} onChange={(e) => update('destination', e.target.value)} options={DESTINOS} />
+            <Input label="Fecha" type="date" name="date" value={form.date} onChange={(e) => update('date', e.target.value)} />
+            <Input label="Hora de inicio" type="time" name="windowStart" value={form.windowStart} onChange={(e) => update('windowStart', e.target.value)} />
+            <Input label="Hora de fin" type="time" name="windowEnd" value={form.windowEnd} onChange={(e) => update('windowEnd', e.target.value)} />
           </div>
         </Card>
 
         <Card>
           <CardHeader eyebrow="Vehiculo y equipo" title="Detalle operativo" />
           <div className="grid-2">
-            <Input
-              label="Descripcion del vehiculo"
-              name="vehicleDescription"
-              value={form.vehicleDescription}
-              onChange={(e) => update('vehicleDescription', e.target.value)}
-              placeholder="Tipo, color, marca"
-            />
-            <Input
-              label="Placa"
-              name="licensePlate"
-              value={form.licensePlate}
-              onChange={(e) => update('licensePlate', e.target.value.toUpperCase())}
-              placeholder="DEMO-001"
-              className="text-mono"
-            />
-            <Textarea
-              label="Herramientas o equipo"
-              name="toolsOrEquipment"
-              value={form.toolsOrEquipment}
-              onChange={(e) => update('toolsOrEquipment', e.target.value)}
-              placeholder="Lista resumida de herramientas / insumos."
-            />
-            <Select
-              label="Clasificacion de riesgo"
-              name="riskLevel"
-              value={form.riskLevel}
-              onChange={(e) => update('riskLevel', e.target.value as RiskLevel)}
-              options={RIESGOS}
-            />
+            <Input label="Descripcion del vehiculo" name="vehicleDescription" value={form.vehicleDescription} onChange={(e) => update('vehicleDescription', e.target.value)} placeholder="Tipo, color, marca" />
+            <Input label="Placa" name="licensePlate" value={form.licensePlate} onChange={(e) => update('licensePlate', e.target.value.toUpperCase())} placeholder="DEMO-001" className="text-mono" />
+            <Textarea label="Herramientas o equipo" name="toolsOrEquipment" value={form.toolsOrEquipment} onChange={(e) => update('toolsOrEquipment', e.target.value)} placeholder="Lista resumida de herramientas / insumos." />
+            <Select label="Clasificacion de riesgo" name="riskLevel" value={form.riskLevel} onChange={(e) => update('riskLevel', e.target.value as RiskLevel)} options={RIESGOS} />
           </div>
           <div style={{ marginTop: 16 }}>
             <Switch
@@ -196,17 +156,12 @@ export const ProviderRequestForm = () => {
 
         <Card>
           <CardHeader eyebrow="Notas" title="Comentarios operativos" />
-          <Textarea
-            name="comments"
-            value={form.comments}
-            onChange={(e) => update('comments', e.target.value)}
-            placeholder="Notas internas para seguridad."
-          />
+          <Textarea name="comments" value={form.comments} onChange={(e) => update('comments', e.target.value)} placeholder="Notas internas para seguridad." />
         </Card>
 
         <div className="row-end">
           <Button variant="ghost" onClick={handleSaveDraft}>Guardar borrador</Button>
-          <Button variant="primary" onClick={handleSubmit}>Enviar solicitud</Button>
+          <Button variant="primary" onClick={handleSubmit}>{submitLabel}</Button>
         </div>
       </div>
 
@@ -225,28 +180,17 @@ export const ProviderRequestForm = () => {
             <dd className="text-mono">{folio || 'Se genera al enviar'}</dd>
             <dt>Codigo</dt>
             <dd>{shortCode ? <span className="code-pill">{shortCode}</span> : <span className="text-subtle">--</span>}</dd>
-            <dt>Persona</dt>
-            <dd>{form.fullName || '--'}</dd>
-            <dt>Empresa</dt>
-            <dd>{form.company || '--'}</dd>
-            <dt>Motivo</dt>
-            <dd>{form.reason || '--'}</dd>
-            <dt>Destino</dt>
-            <dd>{form.destination || '--'}</dd>
-            <dt>Fecha</dt>
-            <dd className="text-mono">{form.date || '--'}</dd>
-            <dt>Ventana</dt>
-            <dd className="text-mono">{form.windowStart || '--'} - {form.windowEnd || '--'}</dd>
-            <dt>Vehiculo</dt>
-            <dd>{form.vehicleDescription || '--'}</dd>
-            <dt>Placa</dt>
-            <dd className="text-mono">{form.licensePlate || '--'}</dd>
-            <dt>Responsable</dt>
-            <dd>{form.internalResponsible || '--'}</dd>
-            <dt>Escolta</dt>
-            <dd>{form.escortRequired ? 'Requerida' : 'No requerida'}</dd>
-            <dt>Riesgo</dt>
-            <dd><RiskDot level={form.riskLevel} /></dd>
+            <dt>Persona</dt><dd>{form.fullName || '--'}</dd>
+            <dt>Empresa</dt><dd>{form.company || '--'}</dd>
+            <dt>Motivo</dt><dd>{form.reason || '--'}</dd>
+            <dt>Destino</dt><dd>{form.destination || '--'}</dd>
+            <dt>Fecha</dt><dd className="text-mono">{form.date || '--'}</dd>
+            <dt>Ventana</dt><dd className="text-mono">{form.windowStart || '--'} - {form.windowEnd || '--'}</dd>
+            <dt>Vehiculo</dt><dd>{form.vehicleDescription || '--'}</dd>
+            <dt>Placa</dt><dd className="text-mono">{form.licensePlate || '--'}</dd>
+            <dt>Responsable</dt><dd>{form.internalResponsible || '--'}</dd>
+            <dt>Escolta</dt><dd>{form.escortRequired ? 'Requerida' : 'No requerida'}</dd>
+            <dt>Riesgo</dt><dd><RiskDot level={form.riskLevel} /></dd>
           </dl>
         </Card>
       </aside>
