@@ -51,6 +51,9 @@ export const Navbar = () => (
       </nav>
 
       <div className="navbar__right">
+        <NavLink to="/portal/login" className="navbar__portal-link" title="Abrir el Portal del solicitante">
+          Portal solicitante &rarr;
+        </NavLink>
         <span className="env-pill" title="Ambiente de demostracion">MVP DEMO</span>
         <div className="user-chip" aria-label="Sesion actual">
           <span className="user-chip__avatar">{initials(MOCK_OPERATOR.name)}</span>
